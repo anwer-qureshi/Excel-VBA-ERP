@@ -1,0 +1,13 @@
+# Excel temporary and backup files
+~$*.xls*
+*.xlk
+*.tmp
+
+# IDE/local config
+.vscode/
+.idea/
+*.suo
+
+# OS files
+.DS_Store
+Thumbs.db
