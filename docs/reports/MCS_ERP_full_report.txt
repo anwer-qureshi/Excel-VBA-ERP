@@ -1,0 +1,584 @@
+MCS_ERP.xlsm - Structural Analysis Report
+
+Sheets analyzed: 25
+
+Sheet: ChartOfAccounts
+Table: tbl_ChartOfAccounts
+ Header Row: 1
+ Headers (index:value):
+  01: AccountCode
+  02: AccountName
+  03: AccountType
+  04: Group
+  05: SubGroup
+  06: NormalSide
+  07: ParentCode
+  08: IsControl
+  09: Status
+  10: CreatedBy
+  11: CreatedOn
+  12: ModifiedBy
+  13: ModifiedOn
+  14: IsPosted
+ Found FK-like columns:
+   - AccountCode (col 1) -> master sheet: ChartOfAccounts
+
+Sheet: GeneralLedger
+Table: tbl_GeneralLedger
+ Header Row: 1
+ Headers (index:value):
+  01: EntryID
+  02: TransID
+  03: Date
+  04: AccountCode
+  05: Description
+  06: Debit
+  07: Credit
+  08: CounterAccount
+  09: Source
+  10: PostedBy
+  11: Timestamp
+  12: CreatedBy
+  13: CreatedOn
+  14: ModifiedBy
+  15: ModifiedOn
+  16: Status
+  17: IsPosted
+ Found FK-like columns:
+   - TransID (col 2) -> master sheet: Transactions
+   - AccountCode (col 4) -> master sheet: ChartOfAccounts
+
+Sheet: Customers
+Table: tbl_Customers
+ Header Row: 1
+ Headers (index:value):
+  01: CustomerID
+  02: CustomerName
+  03: AccountCode
+  04: Address
+  05: Phone
+  06: Email
+  07: Status
+  08: CreatedBy
+  09: CreatedOn
+  10: ModifiedBy
+  11: ModifiedOn
+  12: IsPosted
+ Found FK-like columns:
+   - CustomerID (col 1) -> master sheet: Customers
+   - AccountCode (col 3) -> master sheet: ChartOfAccounts
+
+Sheet: Suppliers
+Table: tbl_Suppliers
+ Header Row: 1
+ Headers (index:value):
+  01: SupplierID
+  02: SupplierName
+  03: AccountCode
+  04: Address
+  05: Phone
+  06: Email
+  07: Status
+  08: CreatedBy
+  09: CreatedOn
+  10: ModifiedBy
+  11: ModifiedOn
+  12: IsPosted
+ Found FK-like columns:
+   - SupplierID (col 1) -> master sheet: Suppliers
+   - AccountCode (col 3) -> master sheet: ChartOfAccounts
+
+Sheet: Products
+Table: tbl_Products
+ Header Row: 1
+ Headers (index:value):
+  01: ProductID
+  02: ProductName
+  03: Category
+  04: SubCategory
+  05: Unit
+  06: InventoryAccount
+  07: COGSAccount
+  08: SalesAccount
+  09: PurchaseAccount
+  10: JobWorkExpenseAccount
+  11: ReorderLevel
+  12: Status
+  13: Notes
+  14: CreatedBy
+  15: CreatedOn
+  16: ModifiedBy
+  17: ModifiedOn
+  18: IsPosted
+ Found FK-like columns:
+   - ProductID (col 1) -> master sheet: Products
+
+Sheet: Transactions
+Table: tbl_Transactions
+ Header Row: 1
+ Headers (index:value):
+  01: TransID
+  02: TransType
+  03: TransDate
+  04: RefNo
+  05: Description
+  06: CustomerID
+  07: SupplierID
+  08: TotalAmount
+  09: Status
+  10: PostedBy
+  11: Timestamp
+  12: CreatedBy
+  13: CreatedOn
+  14: ModifiedBy
+  15: ModifiedOn
+  16: IsPosted
+ Found FK-like columns:
+   - TransID (col 1) -> master sheet: Transactions
+   - CustomerID (col 6) -> master sheet: Customers
+   - SupplierID (col 7) -> master sheet: Suppliers
+
+Sheet: TransactionLines
+Table: tbl_TransactionLines
+ Header Row: 1
+ Headers (index:value):
+  01: TransLineID
+  02: TransID
+  03: ProductID
+  04: Description
+  05: QtyIn
+  06: QtyOut
+  07: Rate
+  08: Amount
+  09: WHID
+  10: PurchaseType
+  11: Remarks
+  12: CreatedBy
+  13: CreatedOn
+  14: ModifiedBy
+  15: ModifiedOn
+  16: Status
+  17: IsPosted
+ Found FK-like columns:
+   - TransID (col 2) -> master sheet: Transactions
+   - ProductID (col 3) -> master sheet: Products
+   - WHID (col 9) -> master sheet: Warehouses
+
+Sheet: SalePolicies
+Table: tbl_SalePolicies
+ Header Row: 1
+ Headers (index:value):
+  01: PolicyID
+  02: PolicyName
+  03: StartDate
+  04: EndDate
+  05: DiscountType
+  06: DiscountValue
+  07: IsBundle
+  08: BundlePrice
+  09: EligibleProducts
+  10: MinQtyPerProduct
+  11: Status
+  12: Remarks
+  13: CreatedBy
+  14: CreatedOn
+  15: ModifiedBy
+  16: ModifiedOn
+  17: IsPosted
+ Found FK-like columns:
+   - PolicyID (col 1) -> master sheet: SalePolicies
+
+Sheet: SalePolicyLines
+Table: tbl_SalePolicyLines
+ Header Row: 1
+ Headers (index:value):
+  01: PolicyLineID
+  02: PolicyID
+  03: ProductID
+  04: ProductName
+  05: DiscountType
+  06: DiscountValue
+  07: MinQty
+  08: MaxQty
+  09: CustomerGroup
+  10: BundleGroup
+  11: BundlePrice
+  12: IsActive
+  13: StartDate
+  14: EndDate
+  15: Remarks
+  16: CreatedBy
+  17: CreatedOn
+  18: ModifiedBy
+  19: ModifiedOn
+  20: Status
+  21: IsPosted
+ Found FK-like columns:
+   - PolicyID (col 2) -> master sheet: SalePolicies
+   - ProductID (col 3) -> master sheet: Products
+
+Sheet: PurchaseOrders
+Table: tbl_PurchaseOrders
+ Header Row: 1
+ Headers (index:value):
+  01: POID
+  02: PODate
+  03: SupplierID
+  04: ExpectedDate
+  05: Status
+  06: Description
+  07: AmountTotal
+  08: Remarks
+  09: CreatedBy
+  10: CreatedOn
+  11: ModifiedBy
+  12: ModifiedOn
+  13: IsPosted
+ Found FK-like columns:
+   - POID (col 1) -> master sheet: PurchaseOrders
+   - SupplierID (col 3) -> master sheet: Suppliers
+
+Sheet: PurchaseOrderLines
+Table: tbl_PurchaseOrderLines
+ Header Row: 1
+ Headers (index:value):
+  01: POLineID
+  02: POID
+  03: ProductID
+  04: Description
+  05: QuantityOrdered
+  06: QuantityReceived
+  07: Rate
+  08: Amount
+  09: WHID
+  10: Remarks
+  11: CreatedBy
+  12: CreatedOn
+  13: ModifiedBy
+  14: ModifiedOn
+  15: Status
+  16: IsPosted
+ Found FK-like columns:
+   - POID (col 2) -> master sheet: PurchaseOrders
+   - ProductID (col 3) -> master sheet: Products
+   - WHID (col 9) -> master sheet: Warehouses
+
+Sheet: SalesOrders
+Table: tbl_SalesOrders
+ Header Row: 1
+ Headers (index:value):
+  01: SOID
+  02: SODate
+  03: CustomerID
+  04: ExpectedDate
+  05: Status
+  06: Description
+  07: AmountTotal
+  08: Remarks
+  09: CreatedBy
+  10: CreatedOn
+  11: ModifiedBy
+  12: ModifiedOn
+  13: IsPosted
+ Found FK-like columns:
+   - SOID (col 1) -> master sheet: SalesOrders
+   - CustomerID (col 3) -> master sheet: Customers
+
+Sheet: SalesOrderLines
+Table: tbl_SalesOrderLines
+ Header Row: 1
+ Headers (index:value):
+  01: SOLineID
+  02: SOID
+  03: ProductID
+  04: Description
+  05: QuantityOrdered
+  06: QuantityDelivered
+  07: Rate
+  08: Amount
+  09: WHID
+  10: Remarks
+  11: CreatedBy
+  12: CreatedOn
+  13: ModifiedBy
+  14: ModifiedOn
+  15: Status
+  16: IsPosted
+ Found FK-like columns:
+   - SOID (col 2) -> master sheet: SalesOrders
+   - ProductID (col 3) -> master sheet: Products
+   - WHID (col 9) -> master sheet: Warehouses
+
+Sheet: DeliveryNotes
+Table: tbl_DeliveryNotes
+ Header Row: 1
+ Headers (index:value):
+  01: DeliveryNoteID
+  02: DeliveryNoteNo
+  03: DeliveryDate
+  04: CustomerID
+  05: SOID
+  06: Status
+  07: Remarks
+  08: CreatedBy
+  09: CreatedOn
+  10: PostedToInventory
+  11: ModifiedBy
+  12: ModifiedOn
+  13: IsPosted
+ Found FK-like columns:
+   - DeliveryNoteID (col 1) -> master sheet: DeliveryNotes
+   - CustomerID (col 4) -> master sheet: Customers
+   - SOID (col 5) -> master sheet: SalesOrders
+
+Sheet: DeliveryNoteLines
+Table: tbl_DeliveryNoteLines
+ Header Row: 1
+ Headers (index:value):
+  01: DeliveryNoteLineID
+  02: DeliveryNoteID
+  03: ProductID
+  04: OrderedQty
+  05: DeliveredQty
+  06: RemainingQty
+  07: Remarks
+  08: CreatedBy
+  09: CreatedOn
+  10: ModifiedBy
+  11: ModifiedOn
+  12: Status
+  13: IsPosted
+ Found FK-like columns:
+   - ProductID (col 3) -> master sheet: Products
+
+Sheet: ReportHistory
+Table: tbl_ReportHistory
+ Header Row: 1
+ Headers (index:value):
+  01: ReportID
+  02: ReportType
+  03: PeriodFrom
+  04: PeriodTo
+  05: GeneratedOn
+  06: GeneratedBy
+  07: FilePath
+  08: Remarks
+  09: CreatedBy
+  10: CreatedOn
+  11: ModifiedBy
+  12: ModifiedOn
+  13: Status
+  14: IsPosted
+ Found FK-like columns:
+   - ReportID (col 1) -> master sheet: ReportHistory
+
+Sheet: ReportSnapshot
+Table: tbl_ReportSnapshot
+ Header Row: 1
+ Headers (index:value):
+  01: SnapshotID
+  02: ReportID
+  03: ReportType
+  04: LineNo
+  05: Section
+  06: AccountTitle
+  07: AccountCode
+  08: AmountDr
+  09: AmountCr
+  10: Amount
+  11: CreatedOn
+  12: CreatedBy
+  13: ModifiedBy
+  14: ModifiedOn
+  15: Status
+  16: IsPosted
+ Found FK-like columns:
+   - ReportID (col 2) -> master sheet: ReportHistory
+   - AccountCode (col 7) -> master sheet: ChartOfAccounts
+
+Sheet: DocumentHistory
+Table: tbl_DocumentHistory
+ Header Row: 1
+ Headers (index:value):
+  01: DocSnapshotID
+  02: DocHistoryID
+  03: DocumentType
+  04: DocumentID
+  05: DocumentNo
+  06: LineNo
+  07: Section
+  08: FieldLabel
+  09: FieldValue
+  10: CreatedOn
+  11: CreatedBy
+  12: ModifiedBy
+  13: ModifiedOn
+  14: Status
+  15: IsPosted
+
+Sheet: SalesInvoices
+Table: tbl_SalesInvoices
+ Header Row: 1
+ Headers (index:value):
+  01: SalesInvoiceID
+  02: InvoiceNo
+  03: InvoiceDate
+  04: CustomerID
+  05: DeliveryNoteID
+  06: SOID
+  07: PaymentTerms
+  08: Remarks
+  09: SubTotal
+  10: DiscountAmount
+  11: TaxAmount
+  12: TotalAmount
+  13: Status
+  14: TransactionID
+  15: PostedBy
+  16: PostedOn
+  17: CreatedBy
+  18: CreatedOn
+  19: ModifiedBy
+  20: ModifiedOn
+  21: IsPosted
+ Found FK-like columns:
+   - SalesInvoiceID (col 1) -> master sheet: SalesInvoices
+   - CustomerID (col 4) -> master sheet: Customers
+   - SOID (col 6) -> master sheet: SalesOrders
+
+Sheet: SalesInvoiceLines
+Table: tbl_SalesInvoiceLines
+ Header Row: 1
+ Headers (index:value):
+  01: InvoiceLineID
+  02: SalesInvoiceID
+  03: ProductID
+  04: Description
+  05: Quantity
+  06: Unit
+  07: Rate
+  08: DiscountType
+  09: DiscountValue
+  10: TaxRate
+  11: TaxAmount
+  12: LineAmount
+  13: NetAmount
+  14: CreatedOn
+  15: CreatedBy
+  16: ModifiedBy
+  17: ModifiedOn
+  18: Status
+  19: IsPosted
+ Found FK-like columns:
+   - SalesInvoiceID (col 2) -> master sheet: SalesInvoices
+   - ProductID (col 3) -> master sheet: Products
+
+Sheet: InventoryTransactions
+Table: tbl_InventoryTransactions
+ Header Row: 1
+ Headers (index:value):
+  01: InventoryTransID
+  02: TransDate
+  03: ProductID
+  04: SourceType
+  05: SourceID
+  06: DocumentNo
+  07: QuantityIn
+  08: QuantityOut
+  09: Rate
+  10: Remarks
+  11: CreatedOn
+  12: CreatedBy
+  13: ModifiedBy
+  14: ModifiedOn
+  15: Status
+  16: IsPosted
+ Found FK-like columns:
+   - ProductID (col 3) -> master sheet: Products
+
+Sheet: StockLedger
+Table: tbl_StockLedger
+ Header Row: 1
+ Headers (index:value):
+  01: StockID
+  02: ProductID
+  03: WHID
+  04: LedgerDate
+  05: QtyIn
+  06: QtyOut
+  07: RunningBalance
+  08: RefType
+  09: RefID
+  10: CreatedBy
+  11: CreatedOn
+  12: Remarks
+  13: Active
+  14: ModifiedBy
+  15: ModifiedOn
+  16: Status
+  17: IsPosted
+ Found FK-like columns:
+   - ProductID (col 2) -> master sheet: Products
+   - WHID (col 3) -> master sheet: Warehouses
+
+Sheet: Warehouses
+Table: tbl_Warehouses
+ Header Row: 1
+ Headers (Index:value):
+  01: WHID
+  02: WarehouseName
+  03: Location
+  04: Manager
+  05: Capacity
+  06: CreatedBy
+  07: CreatedOn
+  08: ModifiedBy
+  09: ModifiedOn
+  10: Status
+  11: IsPosted
+ Found FK-like columns:
+   - WHID (col 1) -> master sheet: Warehouses
+
+Sheet: SystemPostingErrors
+Table: tbl_PostingErrors
+ Header Row: 1
+ Headers (Index:value):
+  01: ErrorID
+  02: SourceType
+  03: SourceID
+  04: ErrNo
+  05: ErrMsg
+  06: ErrProcedure
+  07: PostedTransID
+  08: IsResolved
+  09: ResolvedBy
+  10: ResolvedOn
+  11: Remarks
+  12: CreatedBy
+  13: CreatedOn
+  14: ModifiedBy
+  15: ModifiedOn
+  16: Status
+  17: IsPosted
+ Found FK-like columns:
+   - ErrorID (col 1) -> master sheet: tbl_PostingErrors
+
+Sheet: SystemAccounts
+Table: tbl_SystemAccounts
+ Header Row: 1
+ Headers (Index:value):
+  01: SysAcctID
+  02: KeyName
+  03: AccountCode
+  04: AccountName
+  05: Description
+  06: ModuleScope
+  07: Status
+  08: CreatedBy
+  09: CreatedOn
+  10: ModifiedBy
+  11: ModifiedOn
+  12: IsPosted
+ Found FK-like columns:
+   - SysAcctID (col 1) -> master sheet: tbl_SystemAccounts
+   - AccountCode (col 3) -> master sheet: tbl_GeneralLedger
