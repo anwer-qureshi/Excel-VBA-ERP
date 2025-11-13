@@ -1,0 +1,6 @@
+# Track Excel binaries with Git LFS
+*.xlsm filter=lfs diff=lfs merge=lfs -text
+*.xlsx filter=lfs diff=lfs merge=lfs -text
+
+# Track other large binaries if needed
+*.zip filter=lfs diff=lfs merge=lfs -text
