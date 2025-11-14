@@ -1,3 +1,4 @@
+ url=https://github.com/anwer-qureshi/Excel-VBA-ERP/blob/main/src/vba/modules/modPostingHelpers.bas
 Attribute VB_Name = "modPostingHelpers"
 Option Explicit
 '====================================================================
@@ -6,10 +7,75 @@ Option Explicit
 '          - Table lookups
 '          - ID generation and assignment
 '          - Safe write-back helpers
+'          - Safe type conversions and small utilities
 ' DEPENDS: None (standalone)
-' UPDATED: 2025-11-11
+' UPDATED: 2025-11-13
 '====================================================================
 
+' ---------- Safe conversion helpers ----------
+Public Function SafeDouble(ByVal v As Variant) As Double
+    On Error Resume Next
+    If IsObject(v) Then
+        SafeDouble = 0#
+        Exit Function
+    End If
+    If IsNull(v) Or IsEmpty(v) Then
+        SafeDouble = 0#
+    Else
+        SafeDouble = CDbl(v)
+    End If
+    If Err.Number <> 0 Then
+        Err.Clear
+        SafeDouble = 0#
+    End If
+    On Error GoTo 0
+End Function
+
+Public Function SafeCurrency(ByVal v As Variant) As Currency
+    On Error Resume Next
+    If IsObject(v) Then
+        SafeCurrency = 0@
+        Exit Function
+    End If
+    If IsNull(v) Or IsEmpty(v) Then
+        SafeCurrency = 0@
+    Else
+        SafeCurrency = CCur(v)
+    End If
+    If Err.Number <> 0 Then
+        Err.Clear
+        SafeCurrency = 0@
+    End If
+    On Error GoTo 0
+End Function
+
+Public Function SafeLong(ByVal v As Variant) As Long
+    On Error Resume Next
+    If IsObject(v) Then
+        SafeLong = 0
+        Exit Function
+    End If
+    If IsNull(v) Or IsEmpty(v) Then
+        SafeLong = 0
+    Else
+        SafeLong = CLng(v)
+    End If
+    If Err.Number <> 0 Then
+        Err.Clear
+        SafeLong = 0
+    End If
+    On Error GoTo 0
+End Function
+
+Public Function GetCurrentUserName() As String
+    On Error Resume Next
+    GetCurrentUserName = Application.UserName
+    If Len(Trim(GetCurrentUserName)) = 0 Then GetCurrentUserName = Environ("Username")
+    If Len(Trim(GetCurrentUserName)) = 0 Then GetCurrentUserName = "Unknown"
+    On Error GoTo 0
+End Function
+
+' ---------- Table & ID helpers (original logic, kept but polished) ----------
 ' Return a Dictionary representing a single table row (by key)
 Public Function GetTableRow(ByVal TableName As String, ByVal KeyName As String, ByVal KeyValue As Variant) As Object
     Dim ws As Worksheet, lo As ListObject
@@ -20,7 +86,11 @@ Public Function GetTableRow(ByVal TableName As String, ByVal KeyName As String, 
 
     Dim i As Long, dict As Object
     For i = 1 To lo.ListRows.Count
-        If CStr(lo.DataBodyRange.Cells(i, lo.ListColumns(KeyName).Index).Value) = CStr(KeyValue) Then
+        On Error Resume Next
+        Dim cellVal As Variant
+        cellVal = lo.DataBodyRange.Cells(i, lo.ListColumns(KeyName).Index).Value
+        On Error GoTo 0
+        If CStr(cellVal) = CStr(KeyValue) Then
             Set dict = CreateObject("Scripting.Dictionary")
             Dim j As Long
             For j = 1 To lo.ListColumns.Count
@@ -41,7 +111,11 @@ Public Function GetTableRows(ByVal TableName As String, ByVal KeyName As String,
     Dim col As New Collection
     Dim i As Long
     For i = 1 To lo.ListRows.Count
-        If CStr(lo.DataBodyRange.Cells(i, lo.ListColumns(KeyName).Index).Value) = CStr(KeyValue) Then
+        On Error Resume Next
+        Dim cellVal As Variant
+        cellVal = lo.DataBodyRange.Cells(i, lo.ListColumns(KeyName).Index).Value
+        On Error GoTo 0
+        If CStr(cellVal) = CStr(KeyValue) Then
             Dim dict As Object: Set dict = CreateObject("Scripting.Dictionary")
             Dim j As Long
             For j = 1 To lo.ListColumns.Count
@@ -114,7 +188,11 @@ Public Sub WriteBackRow(ByVal TableName As String, ByVal KeyName As String, ByVa
     Set lo = ws.ListObjects(TableName)
     Dim i As Long, j As Long
     For i = 1 To lo.ListRows.Count
-        If CStr(lo.DataBodyRange.Cells(i, lo.ListColumns(KeyName).Index).Value) = CStr(KeyValue) Then
+        On Error Resume Next
+        Dim cellVal As Variant
+        cellVal = lo.DataBodyRange.Cells(i, lo.ListColumns(KeyName).Index).Value
+        On Error GoTo 0
+        If CStr(cellVal) = CStr(KeyValue) Then
             For j = 1 To lo.ListColumns.Count
                 Dim colName As String: colName = lo.ListColumns(j).Name
                 If dict.Exists(colName) Then
@@ -125,3 +203,14 @@ Public Sub WriteBackRow(ByVal TableName As String, ByVal KeyName As String, ByVa
         End If
     Next i
 End Sub
+
+' Utility: check if a dictionary-like object has a key without raising
+Public Function HasKey(ByVal dict As Variant, ByVal key As String) As Boolean
+    On Error Resume Next
+    If IsObject(dict) Then
+        HasKey = dict.Exists(key)
+    Else
+        HasKey = False
+    End If
+    On Error GoTo 0
+End Function
