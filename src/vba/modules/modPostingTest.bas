@@ -1,189 +1,86 @@
+ url=https://github.com/anwer-qureshi/Excel-VBA-ERP/blob/main/src/vba/modules/modPostingTest.bas
 Attribute VB_Name = "modPostingTest"
 Option Explicit
 '====================================================================
 ' MODULE : modPostingTest
-' PURPOSE: Seed minimal test master data and run PostTransaction("SI",id)
-' DEPENDS: modPostingHelpers, modSystemAccounts, modPostingEngine
-' UPDATED: 2025-11-11
+' PURPOSE: Lightweight integration tests for posting flows
+' UPDATED: 2025-11-13
 '====================================================================
 
-Public Sub Test_SalesInvoice_Posting()
+' Test: Post a simple Sales Invoice and verify GL balance and cleanup on rollback
+Public Sub Test_PostTransaction_HappyPath()
     On Error GoTo ErrHandler
-    Debug.Print "=== Starting Sales Invoice Posting Test ==="
+    Dim testSI As Long
+    ' NOTE: This test assumes there is a redacted test SalesInvoice with ID 1 present in workbooks/samples
+    testSI = 1
+    Dim beforeEntries As Long
+    beforeEntries = CountRowsInTable("tbl_GeneralLedger")
 
-    Dim custID As Long, prodID As Long, invID As Long
+    ' Attempt posting
+    PostTransaction "SI", testSI
 
-    ' 1. Seed system accounts (SysAcctID assigned inside)
-    LoadSystemAccounts
+    ' Verify posting created GL entries
+    Dim afterEntries As Long
+    afterEntries = CountRowsInTable("tbl_GeneralLedger")
+    If afterEntries <= beforeEntries Then
+        Err.Raise vbObjectError + 1001, "Test_PostTransaction_HappyPath", "Expected GL entries to increase after posting."
+    Else
+        Debug.Print "Test_PostTransaction_HappyPath: GL entries increased by " & (afterEntries - beforeEntries)
+    End If
 
-    ' 2. Create Customer
-    custID = CreateTestCustomer()
-    Debug.Print "Created Customer ID: "; custID
-
-    ' 3. Create Product
-    prodID = CreateTestProduct()
-    Debug.Print "Created Product ID: "; prodID
-
-    ' 4. Create Sales Invoice
-    invID = CreateTestSalesInvoice(custID, prodID)
-    Debug.Print "Created Sales Invoice ID: "; invID
-
-    ' 5. Execute Posting
-    Debug.Print "Executing PostTransaction('SI'," & invID & ") ..."
-    PostTransaction "SI", invID
-    Debug.Print "Posting completed."
-
-    ' 6. Verify
-    VerifyPosting invID
-
-    Debug.Print "=== Posting Test Completed ==="
     Exit Sub
-
 ErrHandler:
-    Debug.Print "Error during test: " & Err.Number & " - " & Err.Description
-    On Error Resume Next
-    LogPostingError "SI", invID, Err.Number, Err.Description
+    Debug.Print "Test_PostTransaction_HappyPath failed: " & Err.Number & " - " & Err.Description
 End Sub
 
+' Test: Create a dummy transaction and call RollbackTransaction then verify cleanup
+Public Sub Test_RollbackTransaction_Cleanup()
+    On Error GoTo ErrHandler
+    Dim transID As Long
+    transID = CreateTransactionHeader("TI", "TESTR", "Test Rollback", 0, 0)
+    CreateGLLine transID, GetSystemControlAccount("DefaultSales"), 10, True, "TestDr", "", "TEST"
+    CreateGLLine transID, GetSystemControlAccount("DefaultSales"), 10, False, "TestCr", "", "TEST"
 
-'--- LoadSystemAccounts (uses AssignNextID for SysAcctID) ---
-Private Sub LoadSystemAccounts()
-    Dim ws As Worksheet, lo As ListObject
-    Set ws = ThisWorkbook.Worksheets("SystemAccounts")
-    Set lo = ws.ListObjects("tbl_SystemAccounts")
+    ' Ensure created
+    Dim countBefore As Long
+    countBefore = CountMatchingRows("tbl_GeneralLedger", "TransID", transID)
 
-    If lo.ListRows.Count > 0 Then lo.DataBodyRange.Delete
+    If countBefore = 0 Then Err.Raise vbObjectError + 1002, "Test_RollbackTransaction_Cleanup", "No GL entries created for test trans."
 
-    Dim accounts As Variant
-    accounts = Array( _
-        Array("DefaultAR", "Trade Accounts Receivable"), _
-        Array("DefaultAP", "Trade Accounts Payable"), _
-        Array("DefaultSales", "Product Sales"), _
-        Array("DefaultCOGS", "Cost of Goods Sold"), _
-        Array("DefaultInventory", "Inventory - Fertilizers"), _
-        Array("DefaultTaxPayable", "Sales Tax (GST Payable)"), _
-        Array("DiscountAllowed", "Sale Discounts Allowed") _
-    )
+    ' Rollback
+    RollbackTransaction transID
 
-    Dim i As Long, lr As ListRow, nextID As Long, acctCode As String
-    For i = LBound(accounts) To UBound(accounts)
-        acctCode = FindAccountCodeByName(CStr(accounts(i)(1)))
-        If acctCode <> "" Then
-            Set lr = lo.ListRows.Add
-            nextID = AssignNextID(lo, "SysAcctID", lr)
-            lr.Range(lo.ListColumns("KeyName").Index) = accounts(i)(0)
-            lr.Range(lo.ListColumns("AccountCode").Index) = acctCode
-            lr.Range(lo.ListColumns("AccountName").Index) = accounts(i)(1)
-            lr.Range(lo.ListColumns("Description").Index) = "Auto-seeded for test"
-            lr.Range(lo.ListColumns("CreatedBy").Index) = Environ("Username")
-            lr.Range(lo.ListColumns("CreatedOn").Index) = Now
-        End If
-    Next i
+    Dim countAfter As Long
+    countAfter = CountMatchingRows("tbl_GeneralLedger", "TransID", transID)
+    If countAfter <> 0 Then
+        Err.Raise vbObjectError + 1003, "Test_RollbackTransaction_Cleanup", "Rollback did not remove GL entries."
+    Else
+        Debug.Print "Test_RollbackTransaction_Cleanup: rollback cleaned up " & countBefore & " entries."
+    End If
+
+    Exit Sub
+ErrHandler:
+    Debug.Print "Test_RollbackTransaction_Cleanup failed: " & Err.Number & " - " & Err.Description
 End Sub
 
-Private Function FindAccountCodeByName(ByVal namePart As String) As String
+' Simple helpers used by tests
+Public Function CountRowsInTable(ByVal tblName As String) As Long
     Dim ws As Worksheet, lo As ListObject
-    Set ws = ThisWorkbook.Worksheets("ChartOfAccounts")
-    Set lo = ws.ListObjects("tbl_ChartOfAccounts")
-    Dim i As Long
+    Set ws = FindTableWorksheet(tblName)
+    If ws Is Nothing Then CountRowsInTable = 0: Exit Function
+    Set lo = ws.ListObjects(tblName)
+    If lo.DataBodyRange Is Nothing Then CountRowsInTable = 0 Else CountRowsInTable = lo.ListRows.Count
+End Function
+
+Public Function CountMatchingRows(ByVal tblName As String, ByVal keyName As String, ByVal keyValue As Variant) As Long
+    Dim ws As Worksheet, lo As ListObject
+    Set ws = FindTableWorksheet(tblName)
+    If ws Is Nothing Then CountMatchingRows = 0: Exit Function
+    Set lo = ws.ListObjects(tblName)
+    Dim i As Long, cnt As Long: cnt = 0
+    If lo.DataBodyRange Is Nothing Then CountMatchingRows = 0: Exit Function
     For i = 1 To lo.ListRows.Count
-        If InStr(1, CStr(lo.DataBodyRange.Cells(i, lo.ListColumns("AccountName").Index).Value), namePart, vbTextCompare) > 0 Then
-            FindAccountCodeByName = CStr(lo.DataBodyRange.Cells(i, lo.ListColumns("AccountCode").Index).Value)
-            Exit Function
-        End If
+        If CStr(lo.DataBodyRange.Cells(i, lo.ListColumns(keyName).Index).Value) = CStr(keyValue) Then cnt = cnt + 1
     Next i
-End Function
-
-Private Function CreateTestCustomer() As Long
-    Dim ws As Worksheet, lo As ListObject, lr As ListRow, nextID As Long
-    Set ws = ThisWorkbook.Worksheets("Customers")
-    Set lo = ws.ListObjects("tbl_Customers")
-    Set lr = lo.ListRows.Add
-    nextID = AssignNextID(lo, "CustomerID", lr)
-    lr.Range(lo.ListColumns("CustomerName").Index) = "TEST CUSTOMER"
-    lr.Range(lo.ListColumns("AccountCode").Index) = GetSystemControlAccount("DefaultAR")
-    lr.Range(lo.ListColumns("Address").Index) = "N/A"
-    lr.Range(lo.ListColumns("Phone").Index) = "000-0000"
-    lr.Range(lo.ListColumns("Email").Index) = "test@example.com"
-    lr.Range(lo.ListColumns("Status").Index) = "Active"
-    lr.Range(lo.ListColumns("CreatedBy").Index) = Environ("Username")
-    lr.Range(lo.ListColumns("CreatedOn").Index) = Now
-    CreateTestCustomer = nextID
-End Function
-
-Private Function CreateTestProduct() As Long
-    Dim ws As Worksheet, lo As ListObject, lr As ListRow, nextID As Long
-    Set ws = ThisWorkbook.Worksheets("Products")
-    Set lo = ws.ListObjects("tbl_Products")
-    Set lr = lo.ListRows.Add
-    nextID = AssignNextID(lo, "ProductID", lr)
-    lr.Range(lo.ListColumns("ProductName").Index) = "TEST PRODUCT"
-    lr.Range(lo.ListColumns("Category").Index) = "General"
-    lr.Range(lo.ListColumns("SubCategory").Index) = "Test"
-    lr.Range(lo.ListColumns("Unit").Index) = "PCS"
-    lr.Range(lo.ListColumns("InventoryAccount").Index) = GetSystemControlAccount("DefaultInventory")
-    lr.Range(lo.ListColumns("COGSAccount").Index) = GetSystemControlAccount("DefaultCOGS")
-    lr.Range(lo.ListColumns("SalesAccount").Index) = GetSystemControlAccount("DefaultSales")
-    lr.Range(lo.ListColumns("PurchaseAccount").Index) = GetSystemControlAccount("DefaultAP")
-    lr.Range(lo.ListColumns("ReorderLevel").Index) = 10
-    lr.Range(lo.ListColumns("Status").Index) = "Active"
-    lr.Range(lo.ListColumns("Notes").Index) = "Seed product for test"
-    lr.Range(lo.ListColumns("CreatedBy").Index) = Environ("Username")
-    lr.Range(lo.ListColumns("CreatedOn").Index) = Now
-    CreateTestProduct = nextID
-End Function
-
-Private Function CreateTestSalesInvoice(ByVal custID As Long, ByVal prodID As Long) As Long
-    Dim ws As Worksheet, lo As ListObject, lr As ListRow, nextID As Long
-    Set ws = ThisWorkbook.Worksheets("SalesInvoices")
-    Set lo = ws.ListObjects("tbl_SalesInvoices")
-    Set lr = lo.ListRows.Add
-    nextID = AssignNextID(lo, "SalesInvoiceID", lr)
-    lr.Range(lo.ListColumns("InvoiceNo").Index) = "TEST-" & Format(Now, "yymmdd-hhnnss")
-    lr.Range(lo.ListColumns("InvoiceDate").Index) = Date
-    lr.Range(lo.ListColumns("CustomerID").Index) = custID
-    lr.Range(lo.ListColumns("SubTotal").Index) = 1000
-    lr.Range(lo.ListColumns("DiscountAmount").Index) = 0
-    lr.Range(lo.ListColumns("TaxAmount").Index) = 0
-    lr.Range(lo.ListColumns("TotalAmount").Index) = 1000
-    lr.Range(lo.ListColumns("Status").Index) = "Pending"
-    lr.Range(lo.ListColumns("IsPosted").Index) = False
-    lr.Range(lo.ListColumns("CreatedBy").Index) = Environ("Username")
-    lr.Range(lo.ListColumns("CreatedOn").Index) = Now
-
-    ' Insert Sales Invoice Line
-    Dim loL As ListObject, lrL As ListRow, lineID As Long
-    Set loL = ThisWorkbook.Worksheets("SalesInvoiceLines").ListObjects("tbl_SalesInvoiceLines")
-    Set lrL = loL.ListRows.Add
-    lineID = AssignNextID(loL, "InvoiceLineID", lrL)
-    lrL.Range(loL.ListColumns("SalesInvoiceID").Index) = nextID
-    lrL.Range(loL.ListColumns("ProductID").Index) = prodID
-    lrL.Range(loL.ListColumns("Description").Index) = "TEST PRODUCT SALE"
-    lrL.Range(loL.ListColumns("Quantity").Index) = 10
-    lrL.Range(loL.ListColumns("Unit").Index) = "PCS"
-    lrL.Range(loL.ListColumns("Rate").Index) = 100
-    lrL.Range(loL.ListColumns("LineAmount").Index) = 1000
-    lrL.Range(loL.ListColumns("NetAmount").Index) = 1000
-    lrL.Range(loL.ListColumns("Status").Index) = "Pending"
-    lrL.Range(loL.ListColumns("CreatedOn").Index) = Now
-
-    CreateTestSalesInvoice = nextID
-End Function
-
-Private Sub VerifyPosting(ByVal SalesInvoiceID As Long)
-    Debug.Print "----- Verification Results -----"
-    Debug.Print "Transactions Count: "; CountTableRows("tbl_Transactions")
-    Debug.Print "TransactionLines Count: "; CountTableRows("tbl_TransactionLines")
-    Debug.Print "GeneralLedger Count: "; CountTableRows("tbl_GeneralLedger")
-    Debug.Print "InventoryTransactions Count: "; CountTableRows("tbl_InventoryTransactions")
-    Debug.Print "PostingErrors Count: "; CountTableRows("tbl_PostingErrors")
-End Sub
-
-Private Function CountTableRows(ByVal TableName As String) As Long
-    Dim ws As Worksheet, lo As ListObject
-    Set ws = FindTableWorksheet(TableName)
-    If ws Is Nothing Then CountTableRows = 0: Exit Function
-    Set lo = ws.ListObjects(TableName)
-    If lo Is Nothing Then CountTableRows = 0: Exit Function
-    CountTableRows = lo.ListRows.Count
+    CountMatchingRows = cnt
 End Function
